@@ -17,6 +17,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import time
 
+begin_time = time.time()
 sigma_0 = np.identity(2, dtype=complex);
 sigma_x = np.array([[0, 1], [1, 0]], dtype=complex);
 sigma_y = np.array([[0, -1j], [1j, 0]], dtype=complex);
@@ -36,7 +37,9 @@ Gamma_4 = np.kron(sigma_1, sigma_0)
 ## parameters
 gamma = 1
 lambda_ = 1
-delta = 1
+delta = 0
+##----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------##
+
 
 ##Four bands system
 bands = 4
@@ -80,13 +83,17 @@ ax3.plot_surface(X,Y,Z1,cmap='rainbow')
 ax3.plot_surface(X,Y,Z2,cmap='rainbow')
 ax3.plot_surface(X,Y,Z3,cmap='rainbow')
 ax3.plot_surface(X,Y,Z4,cmap='rainbow')
+ax3.view_init(4, 5)
 
 end_plot_time = time.time()
 print('计算能谱时间：', end_plot_time-begintime)
 
+##----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------##
+
+
 ##Energy spectrum of Eq.(6) with open boundary condition in x,y-direction
-size_x = 2
-size_y = 2
+size_x = 3
+size_y = 3
 
 def open_boundary_xy_H_6(_size_x = size_x, _size_y = size_y):
     _open_H_full = np.zeros((bands *_size_x * _size_y, bands * _size_x * _size_y), dtype=complex)
@@ -134,16 +141,18 @@ def open_boundary_xy_H_6(_size_x = size_x, _size_y = size_y):
     
     
     return _open_H_full
-        
-parameter_change = np.linspace(-2,2,1)
-eigenvalues = np.zeros(size_x*size_y*bands*len(parameter_change), dtype=complex)
+##----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------##
+
+test_len_para =100        
+parameter_change = np.linspace(-2,2,test_len_para)
+eigenvalues = np.zeros(size_x*size_y*bands*len(parameter_change), dtype= float)
 gamma_lamdba = np.zeros(size_x*size_y*bands*len(parameter_change), dtype=complex)
 
 
 lambda_ = 1
 delta = 10**-3
 for i in range(len(parameter_change)):
-    print(i)
+    print('在xy都是开放边界条件下的时候，第',i+1,'个参数。','共有',test_len_para,'个参数')
     gamma = lambda_ * parameter_change[i]
     eigval, eigvec = np.linalg.eigh(open_boundary_xy_H_6())
     eigenvalues[i*len(eigval):(i+1)*len(eigval)] = eigval.T
@@ -153,17 +162,12 @@ for i in range(len(parameter_change)):
 fig = plt.figure()
 plt.scatter(gamma_lamdba,eigenvalues,color='red',s=0.2)
 
-
-    
+   
 end_open_boundary_spectrum_time = time.time()
 print('求得开放边界能谱花费时间：', end_open_boundary_spectrum_time-end_plot_time)
     
-
-# a=time.time()
-# np.linalg.eig(np.random.rand(1000,1000))
-# b=time.time()
-# print(b-a)
-
+##----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------##
+##----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------##
 
 #Fig2.B 计算非平庸态中的电荷密度
 
@@ -200,6 +204,8 @@ end_eletronic_charge_density_time = time.time()
 print('计算占据态的电荷密度花费时间：',end_eletronic_charge_density_time-end_open_boundary_spectrum_time)
 
 
+
+##----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------##
 ##计算Wilson loop Fig.3(B)
 
 
@@ -207,7 +213,7 @@ print('计算占据态的电荷密度花费时间：',end_eletronic_charge_densi
 lambda_ = 1
 delta = 0
 gamma = 0.3
-wilson_step_kx = 1000
+wilson_step_kx = 500
 
 def Wilson_loop_x(ky,base_kx=-np.pi):
     step_wilson_loop = wilson_step_kx
@@ -223,6 +229,7 @@ def Wilson_loop_x(ky,base_kx=-np.pi):
         else:
             #print('Wilson loop首尾接上了，不存在gauge的问题，连接点在：',i)
             _wilsonloop_eigval, _wilsonloop_eigvec = np.linalg.eigh(Hamiltonian_6(base_kx, ky))
+            vec_index = np.argsort(np.real(_wilsonloop_eigval))
             for k in range(bands):
                 vector_array[i*bands+k,:]=_wilsonloop_eigvec[:,vec_index[k]].transpose()*np.linalg.norm(_wilsonloop_eigvec[:,vec_index[k]])**-1
     
@@ -246,22 +253,30 @@ def Wilson_loop_x(ky,base_kx=-np.pi):
     return (np.log(Wilson_eigval)*(-1j)/2/np.pi,Wilson_eigvec)
     
 
-# step_ky=600
-# W_x_band0 = np.zeros(step_ky,dtype=complex)
-# W_x_band1 = np.zeros(step_ky,dtype=complex)                    
+step_ky=200
+W_x_band0 = np.zeros(step_ky,dtype=complex)
+W_x_band1 = np.zeros(step_ky,dtype=complex)                    
         
-# ky = np.linspace(-np.pi,np.pi,step_ky)
+ky = np.linspace(-np.pi,np.pi,step_ky)
 
-# for i in range(step_ky):
-#     print(i)
-#     W_x_band0[i] = Wilson_loop_x(ky[i])[0][0]*(-1j)/2/np.pi
-#     W_x_band1[i] = Wilson_loop_x(ky[i])[0][1]*(-1j)/2/np.pi
+for i in range(step_ky):
+    W_x_band0[i] = Wilson_loop_x(ky[i])[0][0] 
+    W_x_band1[i] = Wilson_loop_x(ky[i])[0][1]
 
-# end_Wilson_loop_time = time.time()
-# print('计算Wilson loop所花费时间：',end_eletronic_charge_density_time-end_open_boundary_spectrum_time)
-# fig = plt.figure()
-# plt.scatter(ky,W_x_band0,color='red',s=0.2)
-# plt.scatter(ky,W_x_band1,color='red',s=0.2)
+end_Wilson_loop_time = time.time()
+print('计算Wilson loop W_x(ky)所花费时间：',end_Wilson_loop_time-end_eletronic_charge_density_time)
+fig = plt.figure()
+plt.scatter(ky,W_x_band0,color='red',s=0.2)
+plt.scatter(ky,W_x_band1,color='red',s=0.2)
+
+
+
+
+##----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------##
+
+
+
+
 
 
 #计算nested wilson loop
@@ -294,7 +309,7 @@ def nest_wilson_loop(kx):
         nest_wilson_min = nest_wilson_min * np.dot(vector_array[2*(l+1),:].conjugate(),vector_array[2*l,:])
         nest_wilson_plus = nest_wilson_plus * np.dot(vector_array[2*(l+1)+1,:].conjugate(),vector_array[2*l+1,:])
     
-    return (np.log(nest_wilson_min)*(-1j)/2/np.pi,np.log( nest_wilson_plus)*(-1j)/2/np.pi)
+    return (np.angle(nest_wilson_min)/2/np.pi,np.angle(nest_wilson_plus)/2/np.pi)
 
 
 
@@ -305,29 +320,30 @@ def nest_wilson_loop(kx):
 fin_a=0
 fin_b=0
 l=1
-for i in np.linspace(-np.pi,np.pi,10):
+vx_step=200
+a = np.zeros(vx_step)
+b = np.zeros(vx_step)
+kx = np.linspace(-np.pi,np.pi,vx_step)
+for i in range(vx_step):
     #print(i)
-    a,b=nest_wilson_loop(i)
-    a= np.real(a) % 1
-    b= np.real(b) % 1
-    print('对于每个kx算出来的',a,b)
-    fin_a=fin_a+a
-    fin_b=fin_b+b
+    begin_nested_time = time.time()
+    val1,val2=nest_wilson_loop(i)
+    end_nested_time = time.time()
+    print('计算nested Wilson loop所花费时间：',end_nested_time-begin_nested_time,'kx=',i)
+    a[i]= np.real(val1) %1
+    b[i]= np.real(val2) %1 
+    print('对于每个kx算出来的',val1,val2)
+    fin_a=fin_a+val1
+    fin_b=fin_b+val2
     print('平均的kx',fin_a/l,fin_b/l)
     l+=1
     
-    
+print('总花费时间',time.time()-begin_time)
+fig = plt.figure()
+plt.scatter(ky,a,color='red',s=0.2)
+plt.scatter(ky,b,color='red',s=0.2)
+##----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------##
 
-
-# P_min,P_plus = nest_wilson_loop()
-# print(P_min,P_plus)
-
-
-
-# for i in np.linspace(-np.pi,np.pi,5):
-#     a,b=Wilson_loop_x(0,i)
-#     print(np.linalg.norm(b[0]))
-#     print(np.linalg.norm(b[1]))
 
 
 
